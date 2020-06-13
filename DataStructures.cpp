@@ -457,8 +457,7 @@ BinarySearchTreeInsert(binary_search_tree* Tree, int Key)
 {
 	binary_search_tree_node* NewNode = (binary_search_tree_node*)malloc(sizeof(binary_search_tree_node));
 	NewNode->Key = Key;
-	NewNode->Left = 0;
-	NewNode->Right = 0;
+	NewNode->Left = NewNode->Right = 0;
 
 	binary_search_tree_node* Old = 0;
 	binary_search_tree_node* Current = Tree->Root;
@@ -626,6 +625,177 @@ BinarySearchTreeInorderPrint(binary_search_tree_node* Node)
 		std::cout << Node->Key << " ";
 		BinarySearchTreeInorderPrint(Node->Right);
 	}
+}
+
+
+//
+// NOTE(georgy): Red-Black Tree
+enum rb_color
+{
+	RB_COLOR_RED,
+	RB_COLOR_BLACK
+};
+struct rb_node
+{
+	int Key;
+
+	rb_color Color;
+	rb_node* Parent;
+	rb_node* Left;
+	rb_node* Right;
+};
+struct rb_tree
+{
+	rb_node* Root;
+	rb_node Nil;
+};
+
+static void
+RBLeftRotate(rb_tree* Tree, rb_node* Node)
+{
+	rb_node* Rot = Node->Right;
+	Node->Right = Rot->Left;
+	if (Rot->Left != &Tree->Nil)
+	{
+		Rot->Left->Parent = Node;
+	}
+
+	Rot->Parent = Node->Parent;
+	if (Node->Parent == &Tree->Nil)
+	{
+		Tree->Root = Rot;
+	}
+	else if (Node == Node->Parent->Left)
+	{
+		Node->Parent->Left = Rot;
+	}
+	else
+	{
+		Node->Parent->Right = Rot;
+	}
+
+	Rot->Left = Node;
+	Node->Parent = Rot;
+}
+
+static void
+RBRightRotate(rb_tree* Tree, rb_node* Node)
+{
+	rb_node* Rot = Node->Left;
+	Node->Left = Rot->Right;
+	if (Rot->Right != &Tree->Nil)
+	{
+		Rot->Right->Parent = Node;
+	}
+
+	Rot->Parent = Node->Parent;
+	if (Node->Parent == &Tree->Nil)
+	{
+		Tree->Root = Rot;
+	}
+	else if (Node == Node->Parent->Left)
+	{
+		Node->Parent->Left = Rot;
+	}
+	else
+	{
+		Node->Parent->Right = Rot;
+	}
+
+	Rot->Right = Node;
+	Node->Parent = Rot;
+}
+
+static void
+RBInsertFixup(rb_tree* Tree, rb_node* Node)
+{
+	while (Node->Parent->Color == RB_COLOR_RED)
+	{
+		if (Node->Parent == Node->Parent->Parent->Left)
+		{
+			rb_node* Uncle = Node->Parent->Parent->Right;
+			if (Uncle->Color == RB_COLOR_RED)
+			{
+				Node->Parent->Color = RB_COLOR_BLACK;
+				Uncle->Color = RB_COLOR_BLACK;
+				Node->Parent->Parent->Color = RB_COLOR_RED;
+				Node = Node->Parent->Parent;
+			}
+			else
+			{
+				if (Node == Node->Parent->Right)
+				{
+					Node = Node->Parent;
+					RBLeftRotate(Tree, Node);
+				}
+				Node->Parent->Color = RB_COLOR_BLACK;
+				Node->Parent->Parent->Color = RB_COLOR_RED;
+				RBRightRotate(Tree, Node->Parent->Parent);
+			}
+		}
+		else
+		{
+			rb_node* Uncle = Node->Parent->Parent->Left;
+			if (Uncle->Color == RB_COLOR_RED)
+			{
+				Node->Parent->Color = RB_COLOR_BLACK;
+				Uncle->Color = RB_COLOR_BLACK;
+				Node->Parent->Parent->Color = RB_COLOR_RED;
+				Node = Node->Parent->Parent;
+			}
+			else
+			{
+				if (Node == Node->Parent->Left)
+				{
+					Node = Node->Parent;
+					RBRightRotate(Tree, Node);
+				}
+				Node->Parent->Color = RB_COLOR_BLACK;
+				Node->Parent->Parent->Color = RB_COLOR_RED;
+				RBLeftRotate(Tree, Node->Parent->Parent);
+			}
+		}
+	}
+	Tree->Root->Color = RB_COLOR_BLACK;
+}
+
+static void
+RBInsert(rb_tree* Tree, int Key)
+{
+	rb_node* NewNode = (rb_node*)malloc(sizeof(rb_node));
+	NewNode->Key = Key;
+	NewNode->Color = RB_COLOR_RED;
+	NewNode->Left = NewNode->Right = &Tree->Nil;
+
+	rb_node* Old = &Tree->Nil;
+	rb_node* Current = Tree->Root;
+	while (Current != &Tree->Nil)
+	{
+		Old = Current;
+		if (Key < Current->Key)
+		{
+			Current = Current->Left;
+		}
+		else
+		{
+			Current = Current->Right;
+		}
+	}
+	NewNode->Parent = Old;
+	if (Old == &Tree->Nil)
+	{
+		Tree->Root = NewNode;
+	}
+	else if (Key < Old->Key)
+	{
+		Old->Left = NewNode;
+	}
+	else
+	{
+		Old->Right = NewNode;
+	}
+
+	RBInsertFixup(Tree, NewNode);
 }
 
 int main(void)
@@ -878,6 +1048,24 @@ int main(void)
 	std::cout << "Binary search tree after deletion of 12 (the root): ";
 	BinarySearchTreeInorderPrint(BSTree.Root);
 	std::cout << std::endl;
+
+
+	//
+	// NOTE(georgy): Red-Black Tree
+	//
+	rb_tree RBTree = {};
+	RBTree.Root = &RBTree.Nil;
+	RBTree.Nil.Color = RB_COLOR_BLACK;
+	RBInsert(&RBTree, 11);
+	RBInsert(&RBTree, 2);
+	RBInsert(&RBTree, 14);
+	RBInsert(&RBTree, 1);
+	RBInsert(&RBTree, 7);
+	RBInsert(&RBTree, 15);
+	RBInsert(&RBTree, 5);
+	RBInsert(&RBTree, 8);
+
+	RBInsert(&RBTree, 4);
 
 	return(0);
 }
